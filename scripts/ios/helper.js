@@ -136,22 +136,40 @@ module.exports = {
         fs.writeFileSync(path.resolve(xcodeProjectPath), xcodeProject.writeSync());
     },
 
-    ensureRunpathSearchPath: function(context, xcodeProjectPath){
+    ensureRunpathSearchPath: function (context, xcodeProjectPath) {
 
         function addRunpathSearchBuildProperty(proj, build) {
             const LD_RUNPATH_SEARCH_PATHS = proj.getBuildProperty("LD_RUNPATH_SEARCH_PATHS", build);
             if (!LD_RUNPATH_SEARCH_PATHS) {
-                proj.addBuildProperty("LD_RUNPATH_SEARCH_PATHS", "\"$(inherited) @executable_path/Frameworks\"", build);
+                proj.addBuildProperty("LD_RUNPATH_SEARCH_PATHS", ""$(inherited) @executable_path/Frameworks"", build);
             }
-            if (LD_RUNPATH_SEARCH_PATHS.indexOf("@executable_path/Frameworks") == -1) {
-                var newValue = LD_RUNPATH_SEARCH_PATHS.substr(0, LD_RUNPATH_SEARCH_PATHS.length - 1);
-                newValue += ' @executable_path/Frameworks\"';
-                proj.updateBuildProperty("LD_RUNPATH_SEARCH_PATHS", newValue, build);
+            // Following code is to handle arrays.
+            if (Array.isArray(LD_RUNPATH_SEARCH_PATHS)) {
+                LD_RUNPATH_SEARCH_PATHS.forEach(eachpath => {
+                    if (eachpath.indexOf("@executable_path/Frameworks") == -1) {
+                        var newValue = eachpath.substr(0, LD_RUNPATH_SEARCH_PATHS.length - 1);
+                        newValue += ' @executable_path/Frameworks"';
+                        proj.updateBuildProperty("LD_RUNPATH_SEARCH_PATHS", newValue, build);
+                    }
+                    if (eachpath.indexOf("$(inherited)") == -1) {
+                        var newValue = eachpath.substr(0, LD_RUNPATH_SEARCH_PATHS.length - 1);
+                        newValue += ' $(inherited)"';
+                        proj.updateBuildProperty("LD_RUNPATH_SEARCH_PATHS", newValue, build);
+                    }
+                });
             }
-            if (LD_RUNPATH_SEARCH_PATHS.indexOf("$(inherited)") == -1) {
-                var newValue = LD_RUNPATH_SEARCH_PATHS.substr(0, LD_RUNPATH_SEARCH_PATHS.length - 1);
-                newValue += ' $(inherited)\"';
-                proj.updateBuildProperty("LD_RUNPATH_SEARCH_PATHS", newValue, build);
+            else {
+                // Assuming is a string
+                if (LD_RUNPATH_SEARCH_PATHS.indexOf("@executable_path/Frameworks") == -1) {
+                    var newValue = LD_RUNPATH_SEARCH_PATHS.substr(0, LD_RUNPATH_SEARCH_PATHS.length - 1);
+                    newValue += ' @executable_path/Frameworks"';
+                    proj.updateBuildProperty("LD_RUNPATH_SEARCH_PATHS", newValue, build);
+                }
+                if (LD_RUNPATH_SEARCH_PATHS.indexOf("$(inherited)") == -1) {
+                    var newValue = LD_RUNPATH_SEARCH_PATHS.substr(0, LD_RUNPATH_SEARCH_PATHS.length - 1);
+                    newValue += ' $(inherited)"';
+                    proj.updateBuildProperty("LD_RUNPATH_SEARCH_PATHS", newValue, build);
+                }
             }
         }
 
@@ -167,10 +185,10 @@ module.exports = {
         // Finally, write the .pbxproj back out to disk.
         fs.writeFileSync(path.resolve(xcodeProjectPath), xcodeProject.writeSync());
     },
-    stripDebugSymbols: function(){
+    stripDebugSymbols: function () {
         var podFilePath = 'platforms/ios/Podfile',
             podFile = fs.readFileSync(path.resolve(podFilePath)).toString();
-        if(!podFile.match('DEBUG_INFORMATION_FORMAT')){
+        if (!podFile.match('DEBUG_INFORMATION_FORMAT')) {
             podFile += "\npost_install do |installer|\n" +
                 "    installer.pods_project.targets.each do |target|\n" +
                 "        target.build_configurations.each do |config|\n" +
@@ -182,50 +200,50 @@ module.exports = {
             console.log('cordova-plugin-firebasex: Applied IOS_STRIP_DEBUG to Podfile');
         }
     },
-    applyPluginVarsToPlists: function(googlePlistPath, appPlistPath, pluginVariables){
+    applyPluginVarsToPlists: function (googlePlistPath, appPlistPath, pluginVariables) {
         var googlePlist = plist.parse(fs.readFileSync(path.resolve(googlePlistPath), 'utf8')),
             appPlist = plist.parse(fs.readFileSync(path.resolve(appPlistPath), 'utf8')),
             googlePlistModified = false,
             appPlistModified = false;
 
-        if(typeof pluginVariables['FIREBASE_ANALYTICS_COLLECTION_ENABLED'] !== 'undefined'){
-            googlePlist["FIREBASE_ANALYTICS_COLLECTION_ENABLED"] = (pluginVariables['FIREBASE_ANALYTICS_COLLECTION_ENABLED'] !== "false" ? "true" : "false") ;
+        if (typeof pluginVariables['FIREBASE_ANALYTICS_COLLECTION_ENABLED'] !== 'undefined') {
+            googlePlist["FIREBASE_ANALYTICS_COLLECTION_ENABLED"] = (pluginVariables['FIREBASE_ANALYTICS_COLLECTION_ENABLED'] !== "false" ? "true" : "false");
             googlePlistModified = true;
         }
-        if(typeof pluginVariables['FIREBASE_PERFORMANCE_COLLECTION_ENABLED'] !== 'undefined'){
-            googlePlist["FIREBASE_PERFORMANCE_COLLECTION_ENABLED"] = (pluginVariables['FIREBASE_PERFORMANCE_COLLECTION_ENABLED'] !== "false" ? "true" : "false") ;
+        if (typeof pluginVariables['FIREBASE_PERFORMANCE_COLLECTION_ENABLED'] !== 'undefined') {
+            googlePlist["FIREBASE_PERFORMANCE_COLLECTION_ENABLED"] = (pluginVariables['FIREBASE_PERFORMANCE_COLLECTION_ENABLED'] !== "false" ? "true" : "false");
             googlePlistModified = true;
         }
-        if(typeof pluginVariables['FIREBASE_CRASHLYTICS_COLLECTION_ENABLED'] !== 'undefined'){
-            googlePlist["FIREBASE_CRASHLYTICS_COLLECTION_ENABLED"] = (pluginVariables['FIREBASE_CRASHLYTICS_COLLECTION_ENABLED'] !== "false" ? "true" : "false") ;
+        if (typeof pluginVariables['FIREBASE_CRASHLYTICS_COLLECTION_ENABLED'] !== 'undefined') {
+            googlePlist["FIREBASE_CRASHLYTICS_COLLECTION_ENABLED"] = (pluginVariables['FIREBASE_CRASHLYTICS_COLLECTION_ENABLED'] !== "false" ? "true" : "false");
             googlePlistModified = true;
         }
-        if(typeof pluginVariables['IOS_SHOULD_ESTABLISH_DIRECT_CHANNEL'] !== 'undefined'){
-            appPlist["shouldEstablishDirectChannel"] = (pluginVariables['IOS_SHOULD_ESTABLISH_DIRECT_CHANNEL'] === "true") ;
+        if (typeof pluginVariables['IOS_SHOULD_ESTABLISH_DIRECT_CHANNEL'] !== 'undefined') {
+            appPlist["shouldEstablishDirectChannel"] = (pluginVariables['IOS_SHOULD_ESTABLISH_DIRECT_CHANNEL'] === "true");
             appPlistModified = true;
         }
-        if(pluginVariables['SETUP_RECAPTCHA_VERIFICATION'] === 'true'){
+        if (pluginVariables['SETUP_RECAPTCHA_VERIFICATION'] === 'true') {
             var reversedClientId = googlePlist['REVERSED_CLIENT_ID'];
 
-            if(!appPlist['CFBundleURLTypes']) appPlist['CFBundleURLTypes'] = [];
+            if (!appPlist['CFBundleURLTypes']) appPlist['CFBundleURLTypes'] = [];
             var entry, i;
-            for(i=0; i<appPlist['CFBundleURLTypes'].length; i++){
-                if(typeof appPlist['CFBundleURLTypes'][i] === 'object' && appPlist['CFBundleURLTypes'][i]['CFBundleURLSchemes']){
+            for (i = 0; i < appPlist['CFBundleURLTypes'].length; i++) {
+                if (typeof appPlist['CFBundleURLTypes'][i] === 'object' && appPlist['CFBundleURLTypes'][i]['CFBundleURLSchemes']) {
                     entry = appPlist['CFBundleURLTypes'][i];
                     break;
                 }
             }
-            if(!entry) entry = {};
-            if(!entry['CFBundleTypeRole']) entry['CFBundleTypeRole'] = 'Editor';
-            if(!entry['CFBundleURLSchemes']) entry['CFBundleURLSchemes'] = [];
-            if(entry['CFBundleURLSchemes'].indexOf(reversedClientId) === -1){
+            if (!entry) entry = {};
+            if (!entry['CFBundleTypeRole']) entry['CFBundleTypeRole'] = 'Editor';
+            if (!entry['CFBundleURLSchemes']) entry['CFBundleURLSchemes'] = [];
+            if (entry['CFBundleURLSchemes'].indexOf(reversedClientId) === -1) {
                 entry['CFBundleURLSchemes'].push(reversedClientId)
             }
             appPlist['CFBundleURLTypes'][i] = entry;
             appPlistModified = true;
         }
 
-        if(googlePlistModified) fs.writeFileSync(path.resolve(googlePlistPath), plist.build(googlePlist));
-        if(appPlistModified) fs.writeFileSync(path.resolve(appPlistPath), plist.build(appPlist));
+        if (googlePlistModified) fs.writeFileSync(path.resolve(googlePlistPath), plist.build(googlePlist));
+        if (appPlistModified) fs.writeFileSync(path.resolve(appPlistPath), plist.build(appPlist));
     }
 };
